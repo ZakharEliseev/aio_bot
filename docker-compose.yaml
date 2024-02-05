@@ -1,0 +1,59 @@
+version: "2"
+
+services:
+  postgres:
+    image: postgres:10.23-bullseye
+    container_name: postgres_container
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_DB=weather_data
+      - POSTGRES_USER=user_admin
+      - POSTGRES_PASSWORD=secret_pswd
+      - POSTGRES_INITDB_ARGS="--encoding=UTF8"
+    expose:
+      - "5432"
+    ports:
+      - "5433:5432"
+    volumes:
+      - my-db-data:/var/lib/postgresql/data
+
+  pgadmin4:
+    image: dpage/pgadmin4:6.12
+    ports:
+      - "5080:80"
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=user_admin
+      - PGADMIN_DEFAULT_PASSWORD=secret_pswd
+    volumes:
+      - pgadmin_data:/home/rundeck/server/data
+
+  telegram_bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: telegram_bot_container
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=weather_data
+      - POSTGRES_USER=user_admin
+      - POSTGRES_PASSWORD=secret_pswd!
+      - POSTGRES_PORT=5433
+      - TELEGRAM_TOKEN=<your_telegram_bot_token>
+      - OPENWEATHER_TOKEN=<your_openweather_token>
+      - GISMETEO_TOKEN=<your_gismeteo_token>
+    volumes:
+#      - D:\Projects/my_proj_folder:/app/proj
+      - /volume1/Projects/my_proj_folder:/app/proj
+    depends_on:
+      - postgres
+      #postgres:
+      #  conditions: service_healthy
+    stdin_open: true
+    tty: true
+
+volumes:
+  my-db-data:
+  pgadmin_data:

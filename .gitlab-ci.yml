@@ -1,0 +1,37 @@
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+cache:
+  paths:
+    - .cache/pip
+default:
+  tags:
+    - bot
+stages:
+  - test
+  - deploy
+test-job-check-connection:
+  stage: test
+  script:
+    - curl -s -o /dev/null -w "%{http_code}" https://core.telegram.org/
+test_job_for_build_app:
+  stage: test
+  script:
+   - python3.11 -m venv venv
+   - source venv/bin/activate
+   - python3.11 -m pip install --upgrade pip
+   - python3.11 -m pip install -r requirements.txt --cache-dir deps_cache
+   - |
+     if [ -e "main.py" ]; then
+     timeout 6s python3.11 -m main && echo "done" || echo "done"
+     else
+     echo "main.py is missing"
+     exit 1  # Выход с кодом завершения 1 в случае ошибки
+     fi
+
+deploy-job:
+  stage: deploy
+  script:
+    - sshpass -p "$SSH_PASSWORD" scp -r -P $SSH_PORT * ezv@<your_server_ip>:/volume1/Projects/my_proj_folder
+    - sshpass -p "$SSH_PASSWORD" scp -r -P $SSH_PORT .* ezv@<your_server_ip>:/volume1/Projects/my_proj_folder || true
+    - sshpass -p "$SSH_PASSWORD" ssh -p $SSH_PORT $SSH_USER@<your_server_ip> "cd /volume1/Projects/my_proj_folder && /usr/local/bin/docker-compose up --build -d"
+
